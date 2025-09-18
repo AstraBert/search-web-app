@@ -1,0 +1,36 @@
+{
+  "name": "@cle-does-things/search-web-app",
+  "version": "0.1.0",
+  "description": "Web Application powered by Go and Qdrant to search through 2500+ common German words and sentences.",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "golang-npm install",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AstraBert/search-web-app.git"
+  },
+  "keywords": [
+    "vector-search",
+    "qdrant",
+    "vector-databases",
+    "web-dev",
+    "ai",
+    "ml"
+  ],
+  "author": "Clelia Astra Bertelli",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AstraBert/search-web-app/issues"
+  },
+  "homepage": "https://github.com/AstraBert/search-web-app#readme",
+  "dependencies": {
+    "golang-npm": "^0.0.6"
+  },
+  "goBinary": {
+    "name": "search-web-app",
+    "path": "./bin",
+    "url": "https://github.com/AstraBert/search-web-app/releases/download/v{{version}}/search-web-app_{{version}}_{{platform}}_{{arch}}.tar.gz"
+  }
+}
