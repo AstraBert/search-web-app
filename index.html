@@ -1,0 +1,209 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --font-poppins: Poppins, sans-serif;
+        --font-opensans: "Open Sans", sans-serif;
+      }
+    </style>
+    </head>
+  <body>
+    <div class="min-h-screen bg-gradient-to-r from-[#FDEDBA] via-white to-[#FFBFF8]">
+        <div class="text-center items-center pt-4">
+            <h1 class="text-3xl font-bold font-poppins">
+            German Definitions
+            </h1>
+            <br>
+            <h2 class="text-2xl font-semibold font-poppins">
+            Search through 2500+ German words and common sentences
+            </h2>
+        </div>
+        <div class="text-center items-center mt-8">
+            <label class="text-gray-500 font-semibold text-lg hover:text-xl font-opensans">Type Something...</label><span class="text-red-500 font-semibold text-lg hover:text-xl font-opensans">*</span>
+            <br>
+            <br>
+            <input class="bg-gray-50 shadow-lg border border-gray-200 w-[600px] focus:bg-white font-opensans" id="searchInput" name="searchInput"></input>
+        </div>
+        <div class="text-center items-center mt-8">
+            <label class="text-gray-500 font-semibold text-lg hover:text-xl font-opensans">How many results do you want to see?</label><span class="text-red-500 font-semibold text-lg hover:text-xl font-opensans">*</span>
+            <br>
+            <br>
+            <span class="font-opensans font-semibold text-xl text-gray-700 mt-2 block" id="resultDisplay">5</span>
+            <br>
+            <input type="range" min="1" max="10" value="5" id="resultNumber" class="w-[300px]">
+        </div>
+        <div class="text-center items-center mt-8">
+            <button class="bg-[#92AEFF] shadow-lg text-black border-2 border-[#FDEDBA] w-[300px] hover:bg-[#3E18F9] hover:border-[#FF8705] hover:text-white font-opensans" id="searchButton">Search</button>
+        </div>
+        <div id="dynamic-output-container" class="mt-10">
+            <!-- Loading state -->
+            <div id="output-loading-indicator" class="text-center hidden">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <p class="mt-2 text-gray-600">Searching for results...</p>
+            </div>
+            
+            <!-- Error state -->
+            <div id="output-error-message" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded hidden"></div>
+
+            <div class="text-center font-bold text-lg text-grey-600 text-xl hover:text-2xl hidden" id="resultsHeader">
+                <h3>Search Results:</h3>
+            </div>
+
+            <!-- Dynamic output will be inserted here -->
+            <div id="output-fields" class="mt-8 p-6 bg-gradient-to-r from-[#FDEDBA] via-white to-[#FFBFF8] hidden"></div>
+        </div>
+    </div>
+    <script>
+        const slider = document.getElementById('resultNumber');
+        const display = document.getElementById('resultDisplay');
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        resultsHeader = document.getElementById('resultsHeader');
+        const loadingIndicator = document.getElementById('output-loading-indicator');
+        const errorMessage = document.getElementById('output-error-message');
+        const outputFields = document.getElementById('output-fields');
+
+        // Update display when slider changes
+        slider.addEventListener('input', function() {
+            display.textContent = this.value;
+        });
+
+        // Handle search button click
+        searchButton.addEventListener('click', async function() {
+            const query = searchInput.value.trim();
+            const limit = parseInt(slider.value);
+            
+            // Validate input
+            if (!query) {
+                showError('Please enter a search term');
+                return;
+            }
+            
+            await performSearch(query, limit);
+        });
+
+        // Handle Enter key in search input
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchButton.click();
+            }
+        });
+
+        // Perform the search API call
+        async function performSearch(query, limit) {
+            try {
+                // Show loading state
+                showLoading();
+                
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        limit: limit
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                displayResults(data.results);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                showError('Search failed. Please try again.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Display search results
+        function displayResults(results) {
+            hideError();
+            
+            if (!results || results.length === 0) {
+                outputFields.innerHTML = `
+                    <div class="text-center text-gray-500 font-opensans">
+                        <p class="text-lg">No results found</p>
+                        <p class="text-sm mt-2">Try searching for something else</p>
+                    </div>
+                `;
+                outputFields.classList.remove('hidden');
+                return;
+            }
+            
+            // Create HTML for results
+            const resultsHTML = results.map((result, index) => `
+                <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-poppins font-semibold">
+                            ${index + 1}
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-poppins font-semibold text-lg text-gray-800 mb-2">${escapeHtml(result.title)}</h4>
+                            <p class="font-opensans text-gray-700 leading-relaxed">${escapeHtml(result.content)}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            outputFields.innerHTML = `
+                <div class="space-y-4">
+                    <div class="text-center mb-6">
+                        <p class="font-opensans text-gray-600">
+                            Found <span class="font-semibold text-blue-600">${results.length}</span> result${results.length !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                    ${resultsHTML}
+                </div>
+            `;
+            
+            resultsHeader.classList.remove('hidden')
+            outputFields.classList.remove('hidden');
+        }
+
+        // Show loading state
+        function showLoading() {
+            hideError();
+            outputFields.classList.add('hidden');
+            loadingIndicator.classList.remove('hidden');
+            searchButton.disabled = true;
+            searchButton.textContent = 'Searching...';
+        }
+
+        // Hide loading state
+        function hideLoading() {
+            loadingIndicator.classList.add('hidden');
+            searchButton.disabled = false;
+            searchButton.textContent = 'Search';
+        }
+
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            outputFields.classList.add('hidden');
+        }
+
+        // Hide error message
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        // Utility function to escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+  </body>
+</html>
